@@ -1,0 +1,244 @@
+/* Contenedor de toda la pantalla: alto mínimo completo e imagen de fondo.
+   Para cambiar la imagen, cambia el nombre dentro de url('...') */
+.pagina {
+  min-height: 100vh;
+  background: url('/gestion-habitacion.png') center / cover no-repeat;
+  font-family: sans-serif;
+}
+
+/* ---------- BARRA SUPERIOR ---------- */
+.topbar {
+  display: flex;            /* elementos en fila */
+  align-items: center;      /* centrados verticalmente */
+  gap: 16px;                /* espacio entre ellos */
+  padding: 14px 24px;
+  background: #fff;
+}
+
+.topbar h1 {
+  flex: 1;                  /* el título ocupa el espacio libre y empuja "Cerrar sesión" a la derecha */
+  font-size: 24px;
+  margin: 0;
+}
+
+.btn-volver {
+  border: 1px solid #222;
+  background: #fff;
+  padding: 8px 14px;
+  cursor: pointer;          /* cursor de manito */
+}
+
+/* Círculo azul claro del ícono de cama */
+.icono {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;       /* lo vuelve círculo */
+  background: #dbeafe;
+  color: #1d6fe8;           /* el ícono toma este color (stroke="currentColor") */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Botón rosado "Cerrar sesión" */
+.btn-sesion {
+  background: #fadada;
+  color: #c0392b;
+  border: 0;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* ---------- CONTENIDO ---------- */
+.contenido {
+  padding: 24px 50px;       /* margen interno de la zona principal */
+}
+
+.buscador {
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  margin-bottom: 30px;
+  box-sizing: border-box;   /* el padding no hace que se salga del ancho */
+}
+
+/* ---------- TARJETAS ---------- */
+.grid {
+  display: flex;
+  flex-wrap: wrap;          /* si no caben, pasan a la siguiente fila */
+  gap: 28px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  width: 290px;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;  /* número a la izquierda, estado a la derecha */
+  align-items: center;
+}
+
+.card-head h2 {
+  margin: 0;
+}
+
+.fila {
+  display: flex;
+  justify-content: space-between;  /* capacidad a la izquierda, precio a la derecha */
+  margin-top: 16px;
+}
+
+.precio {
+  color: #0d8bf2;           /* azul del precio */
+}
+
+/* ---------- ETIQUETAS DE ESTADO ---------- */
+/* Forma común de todas las etiquetas */
+.badge {
+  padding: 4px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Un color por estado (el nombre coincide con el estado en minúsculas) */
+.disponible {
+  background: #d9f2df;      /* verde */
+  color: #1e7a37;
+}
+
+.ocupada {
+  background: #ffe5d0;      /* naranja */
+  color: #f0782b;
+}
+
+.reservada {
+  background: #cfe8ff;      /* azul */
+  color: #1b7fd6;
+}
+
+.limpieza {
+  background: #fff3c4;      /* amarillo */
+  color: #9a7a00;
+}
+
+.mantenimiento {
+  background: #e5e5e5;      /* gris */
+  color: #555;
+}
+
+/* ---------- BOTONES DE LA TARJETA ---------- */
+.acciones {
+  display: flex;
+  gap: 14px;
+}
+
+.acciones button {
+  flex: 1;                  /* los dos botones reparten el ancho por igual */
+  padding: 8px;
+  border-radius: 20px;      /* forma de píldora */
+  background: #fff;
+  cursor: pointer;
+}
+
+.btn-editar {
+  border: 1px solid #222;   /* borde negro */
+}
+
+.btn-eliminar {
+  border: 1px solid #e74c3c; /* borde y texto rojos */
+  color: #e74c3c;
+}
+
+/* Botón azul "+ Nueva habitación" */
+.btn-nueva {
+  margin-top: 40px;
+  background: #0d8bf2;
+  color: #fff;
+  border: 0;
+  padding: 12px 22px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ---------- MODAL (FORMULARIO) ---------- */
+/* Fondo oscuro que cubre toda la pantalla y centra el formulario */
+.overlay {
+  position: fixed;          /* se queda fijo sobre todo lo demás */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;                /* estas 4 líneas lo estiran a pantalla completa */
+  background: rgba(0, 0, 0, 0.55);  /* negro con 55% de opacidad */
+  display: flex;
+  align-items: center;      /* centra vertical */
+  justify-content: center;  /* centra horizontal */
+  z-index: 1000;            /* lo pone por encima de todo */
+}
+
+/* Caja blanca del formulario */
+.modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  width: 420px;
+  max-width: 90%;           /* en pantallas pequeñas no se sale */
+  display: flex;
+  flex-direction: column;   /* campos uno debajo del otro */
+  gap: 10px;
+}
+
+.modal h2 {
+  margin: 0;
+}
+
+.sub {
+  margin: 0 0 6px;
+  font-size: 13px;          /* texto pequeño bajo el título */
+}
+
+/* Cada campo: texto arriba, caja de escritura abajo */
+.modal label {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  gap: 4px;
+}
+
+/* Cajas grises de escritura, como en el Figma */
+.modal input,
+.modal select {
+  background: #e3e3e3;
+  border: 0;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+/* Fila con dos campos (precio y capacidad) */
+.dos-col {
+  display: flex;
+  gap: 12px;
+}
+
+.dos-col label {
+  flex: 1;                  /* cada uno ocupa la mitad */
+}
+
+/* Fila de botones Cancelar / Crear */
+.botones {
+  display: flex;
+  justify-content: space-between;  /* uno a cada extremo */
+  margin-top: 10px;
+}
+
+.botones button {
+  padding: 8px 28px;
+  cursor: pointer;
+  font-weight: 600;
+}

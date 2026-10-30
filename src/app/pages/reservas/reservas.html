@@ -1,0 +1,216 @@
+<!-- ============================================================
+     PANTALLA: GESTIÓN DE RESERVAS
+     Los nombres entre llaves {{ }} y los paréntesis ( ) vienen de
+     reservas.ts. Si cambias un nombre allá, cámbialo también aquí.
+     ============================================================ -->
+
+<!-- Contenedor de toda la pantalla (tiene la imagen de fondo) -->
+<div class="pagina">
+
+  <!-- ---------- BARRA SUPERIOR ----------
+       (click)="volver()" significa: "al hacer clic, ejecuta el método volver() de reservas.ts" -->
+  <header class="topbar">
+    <button class="btn-volver" (click)="volver()">← Volver</button>
+    <h1>Gestión de Reservas</h1>
+    <button class="btn-sesion" (click)="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+  <main class="contenido">
+
+    <!-- ---------- BUSCADOR ----------
+         [value]="busqueda()"  → muestra en la caja lo que hay guardado en la señal "busqueda"
+         (input)=...           → cada vez que escribes, guarda el texto nuevo en "busqueda"
+         Como "filtradas()" depende de "busqueda", la tabla se actualiza sola al escribir. -->
+    <input
+      class="buscador"
+      placeholder="Buscar por nombre, habitación o documento"
+      [value]="busqueda()"
+      (input)="busqueda.set($any($event.target).value)"
+    />
+
+    <!-- ---------- TABLA BLANCA CON LAS RESERVAS ---------- -->
+    <section class="tabla">
+
+      <!-- Fila de títulos de las columnas (las 7 columnas las define .fila en el CSS) -->
+      <div class="fila encabezado">
+        <span>Huésped</span>
+        <span>Hab.</span>
+        <span>Entrada</span>
+        <span>Salida</span>
+        <span>Total</span>
+        <span>Estado</span>
+        <span>Acciones</span>
+      </div>
+
+      <!-- @for repite este bloque una vez por cada reserva de la lista "filtradas()".
+           "r" es la reserva actual. "track r.id" ayuda a Angular a no redibujar todo
+           cuando la lista cambia (cada reserva se identifica por su id). -->
+      @for (r of filtradas(); track r.id) {
+        <div class="fila">
+
+          <!-- Columna 1: nombre en negrita y documento debajo en letra pequeña -->
+          <span class="huesped">
+            <strong>{{ r.nombre }}</strong>
+            <small>CC. {{ r.documento }}</small>
+          </span>
+
+          <!-- Columna 2: número de la habitación reservada -->
+          <span>{{ r.numeroHabitacion }}</span>
+
+          <!-- Columnas 3 y 4: el "| date" convierte 2026-05-17 en 17/05/2026 -->
+          <span>{{ r.fechaEntrada | date:'dd/MM/yyyy' }}</span>
+          <span>{{ r.fechaSalida | date:'dd/MM/yyyy' }}</span>
+
+          <!-- Columna 5: el "| currency" convierte 190000 en $190.000 (pesos colombianos, sin decimales) -->
+          <span class="precio">{{ r.total | currency:'COP':'symbol-narrow':'1.0-0' }}</span>
+
+          <!-- Columna 6: etiqueta de color. [class] arma el nombre de la clase según el estado:
+               "Pendiente" → "badge pendiente" (amarillo), "Confirmada" → verde, "Cancelada" → rojo.
+               Los colores están en reservas.css -->
+          <span><span class="badge" [class]="'badge ' + r.estado.toLowerCase()">{{ r.estado }}</span></span>
+
+          <!-- Columna 7: botones. verDetalle(r) y eliminar(r) reciben la reserva de ESTA fila -->
+          <span class="acciones">
+            <button class="btn-detalle" (click)="verDetalle(r)" title="Ver detalles">•••</button>
+            <button class="btn-x" (click)="eliminar(r)" title="Eliminar">✕</button>
+          </span>
+        </div>
+      }
+
+      <!-- @if muestra este mensaje SOLO cuando la lista está vacía
+           (al inicio del proyecto, o si la búsqueda no encuentra nada) -->
+      @if (filtradas().length === 0) {
+        <p class="vacio">No hay reservas para mostrar.</p>
+      }
+    </section>
+
+    <!-- Botón que abre el formulario vacío (ejecuta nueva() de reservas.ts) -->
+    <button class="btn-nueva" (click)="nueva()">+ Nueva Reserva</button>
+  </main>
+
+  <!-- ============================================================
+       MODAL: NUEVA RESERVA
+       @if (modalNueva()) → la ventana solo existe mientras "modalNueva" sea true.
+       ============================================================ -->
+  @if (modalNueva()) {
+
+    <!-- .overlay es la capa oscura de fondo. Si haces clic en ella, se cierra el formulario. -->
+    <div class="overlay" (click)="cerrarNueva()">
+
+      <!-- (click)="$event.stopPropagation()" evita que un clic DENTRO de la ventana blanca
+           llegue a la capa oscura y cierre el formulario por accidente.
+           (ngSubmit)="guardar()" → al enviar el formulario, ejecuta guardar().
+           #f="ngForm" → guarda el estado del formulario en "f" para saber si es válido (f.invalid). -->
+      <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="guardar()" #f="ngForm">
+
+        <h2>Nueva reserva</h2>
+        <p class="sub">Complete los datos del huésped y seleccione la habitación</p>
+
+        <!-- [(ngModel)]="form.nombre" conecta la caja con la variable "form.nombre":
+             lo que escribes se guarda ahí, y si la variable cambia, la caja se actualiza.
+             "required" hace el campo obligatorio (el botón Crear queda apagado si falta). -->
+        <div class="dos-col">
+          <label>Nombre completo
+            <input name="nombre" [(ngModel)]="form.nombre" required />
+          </label>
+          <label>Documento
+            <input name="documento" [(ngModel)]="form.documento" required />
+          </label>
+        </div>
+
+        <div class="dos-col">
+          <label>Email
+            <!-- type="email" valida que tenga formato de correo (con @) -->
+            <input type="email" name="email" [(ngModel)]="form.email" required />
+          </label>
+          <label>Teléfono
+            <input name="telefono" [(ngModel)]="form.telefono" required />
+          </label>
+        </div>
+
+        <!-- Menú de habitaciones. Solo aparecen las que están en estado "Disponible"
+             (habitacionesLibres() las filtra en reservas.ts).
+             [ngValue] guarda el id de la habitación elegida en form.habitacionId.
+             La primera opción (valor 0) es el texto guía y no se puede seleccionar (disabled). -->
+        <label>Habitación
+          <select name="habitacionId" [(ngModel)]="form.habitacionId" required>
+            <option [ngValue]="0" disabled>Seleccione una habitación</option>
+            @for (h of habitacionesLibres(); track h.id) {
+              <option [ngValue]="h.id">Habitación {{ h.numero }} - {{ h.descripcion }}</option>
+            }
+          </select>
+        </label>
+
+        <!-- type="date" abre el calendario del navegador y entrega la fecha como AAAA-MM-DD -->
+        <div class="dos-col">
+          <label>Fecha de Entrada
+            <input type="date" name="fechaEntrada" [(ngModel)]="form.fechaEntrada" required />
+          </label>
+          <label>Fecha de Salida
+            <input type="date" name="fechaSalida" [(ngModel)]="form.fechaSalida" required />
+          </label>
+        </div>
+
+        <!-- Total calculado en vivo: totalEstimado() multiplica noches × precio de la habitación.
+             Se recalcula solo cada vez que cambias la habitación o las fechas. -->
+        <p class="total-vivo">
+          Total estimado:
+          <strong>{{ totalEstimado() | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+        </p>
+
+        <!-- Mensaje rojo: solo aparece si errorFechas() tiene texto
+             (por ejemplo, cuando la salida es anterior a la entrada) -->
+        @if (errorFechas()) {
+          <p class="error">{{ errorFechas() }}</p>
+        }
+
+        <!-- Botones de abajo.
+             "Cancelar" es type="button": solo cierra, no envía el formulario.
+             "Crear Reserva" es type="submit": envía el formulario (ejecuta guardar()).
+             [disabled] lo apaga mientras falte algún campo (f.invalid) o no se haya elegido habitación. -->
+        <div class="botones">
+          <button type="button" (click)="cerrarNueva()">Cancelar</button>
+          <button type="submit" [disabled]="f.invalid || form.habitacionId === 0">Crear Reserva</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- ============================================================
+       MODAL: DETALLES DE LA RESERVA (solo lectura, no se puede editar)
+       @if (reservaDetalle(); as r) → se muestra solo si hay una reserva abierta,
+       y la llama "r" dentro del bloque.
+       ============================================================ -->
+  @if (reservaDetalle(); as r) {
+    <div class="overlay" (click)="cerrarDetalle()">
+      <div class="modal" (click)="$event.stopPropagation()">
+
+        <h2>Detalles de la reserva</h2>
+
+        <!-- Cuadrícula de datos: cada <div> es un par título (small) / valor (p) -->
+        <div class="detalle">
+          <div><small>Huésped</small><p>{{ r.nombre }}</p></div>
+          <div><small>Documento</small><p>{{ r.documento }}</p></div>
+          <div><small>Teléfono</small><p>{{ r.telefono }}</p></div>
+          <div><small>Email</small><p>{{ r.email }}</p></div>
+          <div><small>Habitación</small><p>{{ r.numeroHabitacion }}</p></div>
+          <div>
+            <small>Estado</small>
+            <!-- Misma etiqueta de color que en la tabla -->
+            <p><span class="badge" [class]="'badge ' + r.estado.toLowerCase()">{{ r.estado }}</span></p>
+          </div>
+          <div><small>Ingreso</small><p>{{ r.fechaEntrada | date:'dd/MM/yyyy' }}</p></div>
+          <div><small>Salida</small><p>{{ r.fechaSalida | date:'dd/MM/yyyy' }}</p></div>
+        </div>
+
+        <p class="total-vivo">
+          Total: <strong>{{ r.total | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
+        </p>
+
+        <div class="botones">
+          <button type="button" (click)="cerrarDetalle()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

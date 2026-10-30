@@ -1,0 +1,269 @@
+/* ============================================================
+   PANTALLA: GESTIÓN DE RESERVAS
+   ============================================================ */
+
+/* Contenedor de toda la pantalla: alto mínimo completo e imagen de fondo.
+   Para cambiar la imagen, cambia el nombre dentro de url('...') */
+.pagina {
+  min-height: 100vh;                                  /* ocupa al menos todo el alto de la ventana */
+  background: url('/fondo-hotel.png') center / cover no-repeat; /* imagen centrada que cubre todo */
+  font-family: sans-serif;                            /* tipo de letra */
+  color: #222;                                        /* color del texto por defecto */
+}
+
+/* ---------- BARRA SUPERIOR ---------- */
+.topbar {
+  display: flex;                                      /* elementos en fila */
+  align-items: center;                                /* centrados verticalmente */
+  gap: 16px;                                          /* espacio entre ellos */
+  padding: 14px 24px;                                 /* espacio interior (arriba/abajo, lados) */
+  background: rgba(255, 255, 255, 0.9);               /* blanco con 10% de transparencia */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);         /* sombra suave debajo */
+}
+
+.topbar h1 {
+  flex: 1;                                            /* el título ocupa el espacio libre y empuja "Cerrar sesión" a la derecha */
+  font-size: 24px;
+  margin: 0;                                          /* quita el margen por defecto del título */
+}
+
+/* Propiedad compartida: todos estos botones muestran la "manito" al pasar el mouse */
+.btn-volver,
+.btn-sesion,
+.btn-nueva,
+.btn-detalle,
+.btn-x,
+.modal button {
+  cursor: pointer;
+}
+
+/* Botón "← Volver" (borde negro, fondo blanco) */
+.btn-volver {
+  border: 1px solid #222;
+  background: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;                                 /* esquinas redondeadas */
+}
+
+/* Botón rosado "Cerrar sesión" */
+.btn-sesion {
+  background: #fadada;
+  color: #c0392b;
+  border: 0;
+  padding: 10px 18px;
+  border-radius: 10px;
+}
+
+/* ---------- CONTENIDO ---------- */
+.contenido {
+  padding: 24px 50px;                                 /* separación con los bordes de la pantalla */
+}
+
+/* Caja del buscador */
+.buscador {
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 10px;
+  margin-bottom: 24px;                                /* espacio entre el buscador y la tabla */
+  box-sizing: border-box;                             /* el padding no hace que se salga del ancho */
+}
+
+/* ---------- TABLA ---------- */
+/* Caja blanca con esquinas redondeadas que contiene todas las filas */
+.tabla {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 18px;
+  overflow: hidden;                                   /* el encabezado gris respeta las esquinas redondeadas */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* Cada fila es una cuadrícula de 7 columnas (una por dato).
+   Los números son el ancho relativo de cada columna:
+   Huésped | Hab. | Entrada | Salida | Total | Estado | Acciones */
+.fila {
+  display: grid;
+  grid-template-columns: 2fr 0.8fr 1fr 1fr 1fr 1fr 1fr;
+  align-items: center;
+  gap: 10px;                                          /* espacio entre columnas */
+  padding: 14px 18px;
+  border-bottom: 1px solid #eee;                      /* línea fina entre filas */
+}
+
+/* Fila de títulos: fondo gris claro y letra gruesa */
+.encabezado {
+  background: #f5f5f5;
+  font-weight: 700;
+}
+
+/* Nombre del huésped arriba y su documento debajo */
+.huesped {
+  display: flex;
+  flex-direction: column;                             /* uno debajo del otro */
+  gap: 2px;
+}
+
+/* Valor total en negrita */
+.precio {
+  font-weight: 700;
+}
+
+/* Etiqueta redondeada del estado. El color depende de la clase
+   que pone el HTML según el estado (pendiente, confirmada, cancelada) */
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;                               /* forma de píldora */
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge.pendiente { background: #fff2cc; color: #9a6700; }   /* amarillo */
+.badge.confirmada { background: #dff7e7; color: #1f7a45; }  /* verde */
+.badge.cancelada { background: #ffe3e3; color: #c92a2a; }   /* rojo */
+
+/* Botones de cada fila: detalle (•••) y eliminar (✕) */
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Estilo base de los dos botones (azul claro) */
+.btn-detalle,
+.btn-x {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #edf3ff;
+  color: #1363d6;
+}
+
+/* El botón de eliminar sobrescribe los colores y queda rojizo */
+.btn-x {
+  background: #ffe8e8;
+  color: #d92d20;
+}
+
+/* Mensaje "No hay reservas para mostrar" */
+.vacio {
+  padding: 18px;
+  text-align: center;
+  color: #666;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Botón azul "+ Nueva Reserva" */
+.btn-nueva {
+  margin-top: 22px;
+  background: #0a84ff;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 22px;
+  font-weight: 700;
+}
+
+/* ---------- MODALES (Nueva reserva y Detalles) ---------- */
+/* Capa oscura que cubre toda la pantalla detrás de la ventana */
+.overlay {
+  position: fixed;                                    /* se queda fija encima de todo */
+  inset: 0;                                           /* ocupa de borde a borde */
+  background: rgba(0, 0, 0, 0.45);                    /* negro semitransparente */
+  display: grid;
+  place-items: center;                                /* centra la ventana blanca */
+  padding: 20px;
+}
+
+/* La ventana blanca con el formulario */
+.modal {
+  width: min(640px, 100%);                            /* máximo 640px, o todo el ancho si la pantalla es pequeña */
+  background: #fff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18);
+}
+
+.modal h2 {
+  margin-top: 0;
+}
+
+/* Texto pequeño debajo del título */
+.sub {
+  margin: 0 0 18px;
+  color: #666;
+}
+
+/* Dos campos lado a lado */
+.dos-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;                     /* dos columnas iguales */
+  gap: 16px;
+}
+
+/* Cada campo: título arriba y caja debajo */
+label {
+  display: block;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+/* Cajas de texto y menús desplegables */
+input,
+select {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 8px;                                    /* espacio entre el título y la caja */
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font: inherit;                                      /* usa la misma letra del resto de la pantalla */
+}
+
+/* Total calculado en vivo mientras se llena el formulario */
+.total-vivo {
+  margin: 10px 0 16px;
+  font-size: 1.1rem;
+}
+
+/* Mensaje rojo cuando las fechas no son válidas */
+.error {
+  color: #c0392b;
+  background: #ffe3e3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 10px 0 16px;
+}
+
+/* Fila de botones de abajo (Cancelar / Crear Reserva / Cerrar), alineados a la derecha */
+.botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+/* Botones tipo "button" dentro del modal (Cancelar y Cerrar): gris */
+.modal button[type='button'] {
+  background: #f0f0f0;
+  color: #111;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+}
+
+/* Botón de enviar el formulario (Crear Reserva): azul */
+.modal button[type='submit'] {
+  background: #0a84ff;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+/* Botón apagado mientras el formulario esté incompleto */
+.modal button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;                                /* cursor de "prohibido" */
+}

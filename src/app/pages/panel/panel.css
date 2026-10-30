@@ -1,0 +1,58 @@
+.panel {
+  min-height: calc(100vh - 70px);
+  padding: 40px 56px;
+  box-sizing: border-box;
+  background: #e9dfd0 url('/panel-control.png') center / cover no-repeat;
+}
+.bienvenida h2 { margin: 0; font-size: 1.4rem; font-weight: 500; }
+.bienvenida p { margin: 6px 0 28px 16px; font-size: 0.85rem; }
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.tarjeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  background: #fff;
+  border-radius: 18px;
+}
+.texto { display: flex; flex-direction: column; gap: 8px; }
+.texto span { font-size: 0.85rem; }
+.texto strong { font-size: 1.5rem; text-align: center; }
+.icono {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.icono.azul { background: #dbe9ff; }
+.icono.verde { background: #d9f7e3; }
+.icono.naranja { background: #ffe6cf; }
+.icono.morado { background: #efe0ff; }
+
+.acciones {
+  margin-top: 24px;
+  padding: 22px 24px 28px;
+  background: #fff;
+  border-radius: 18px;
+}
+.acciones h3 { margin: 0 0 20px; }
+.botones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.btn {
+  padding: 22px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  text-decoration: none;
+}
+.btn.azul { background: #0a84ff; }
+.btn.morado { background: #8a85ff; }
+.btn.verde { background: #30b650; }
+.btn:hover { filter: brightness(0.93); }

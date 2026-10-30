@@ -1,0 +1,138 @@
+<!-- Contenedor de toda la pantalla (tiene la imagen de fondo del hotel) -->
+<div class="pagina">
+
+   <!-- Barra superior del Figma: Volver, ícono, título y Cerrar sesión -->
+  <header class="topbar">
+    <button class="btn-volver" (click)="volver()">← Volver</button>
+
+    <!-- Círculo azul claro con el ícono de cama -->
+    <div class="icono">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 4v16" />
+        <path d="M2 8h18a2 2 0 0 1 2 2v10" />
+        <path d="M2 17h20" />
+        <path d="M6 8v9" />
+      </svg>
+    </div>
+
+    <h1>Gestión de Habitaciones</h1>
+    <button class="btn-sesion" (click)="cerrarSesion()">Cerrar sesión</button>
+  </header>
+
+
+  <main class="contenido">
+
+    <!-- Buscador: cada vez que escribes, guarda el texto en "busqueda"
+         y la lista de tarjetas se filtra sola -->
+    <input
+      class="buscador"
+      placeholder="Buscar Habitaciones"
+      [value]="busqueda()"
+      (input)="busqueda.set($any($event.target).value)"
+    />
+
+    <!-- Zona de tarjetas -->
+    <section class="grid">
+      <!-- @for repite una tarjeta por cada habitación de la lista filtrada.
+           "track h.id" ayuda a Angular a identificar cada tarjeta. -->
+      @for (h of filtradas(); track h.id) {
+        <article class="card">
+
+          <!-- Fila de arriba: número de habitación y etiqueta de estado -->
+          <div class="card-head">
+            <h2>Hab. {{ h.numero }}</h2>
+            <!-- La clase CSS cambia según el estado (disponible, ocupada...) para dar el color -->
+            <span class="badge" [class]="'badge ' + h.estado.toLowerCase()">{{ h.estado }}</span>
+          </div>
+
+          <p>{{ h.tipo }}</p>
+          <p>{{ h.descripcion }}</p>
+
+          <!-- Capacidad y precio. El pipe "currency" da formato de dinero -->
+          <div class="fila">
+            <span>Cap. {{ h.capacidad }} pers</span>
+            <strong class="precio">{{ h.precio | currency:'COP':'symbol-narrow':'1.0-0' }}/noche</strong>
+          </div>
+
+          <hr />
+
+          <!-- Botones de la tarjeta; (click) llama a la función del archivo .ts -->
+          <div class="acciones">
+            <button class="btn-editar" (click)="editar(h)">Editar</button>
+            <button class="btn-eliminar" (click)="eliminar(h)">Eliminar</button>
+          </div>
+        </article>
+      }
+    </section>
+
+    <!-- Abre el formulario vacío para crear una habitación -->
+    <button class="btn-nueva" (click)="nueva()">+ Nueva habitación</button>
+  </main>
+
+  <!-- @if: el formulario solo existe en pantalla cuando modalAbierto() es true -->
+  @if (modalAbierto()) {
+
+    <!-- Fondo oscuro. Si haces clic en él, se cierra el formulario -->
+    <div class="overlay" (click)="cerrar()">
+
+      <!-- Formulario. stopPropagation evita que un clic DENTRO del formulario
+           lo cierre. (ngSubmit) ejecuta guardar() al enviarlo.
+           #f permite saber si el formulario es válido. -->
+      <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="guardar()" #f="ngForm">
+
+        <!-- El título cambia según si creas o editas -->
+        <h2>{{ editandoId() === null ? 'Nueva Habitación' : 'Editar Habitación' }}</h2>
+        <p class="sub">Complete los datos de la habitación</p>
+
+        <!-- [(ngModel)] conecta el campo con la variable "form".
+             "required" = obligatorio. -->
+        <label>Número de habitación
+          <input name="numero" [(ngModel)]="form.numero" required />
+        </label>
+
+        <!-- Menú desplegable de tipos; @for crea una opción por cada tipo -->
+        <label>Tipo de habitación
+          <select name="tipo" [(ngModel)]="form.tipo">
+            @for (t of tipos; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </label>
+
+        <!-- Menú desplegable de estados -->
+        <label>Estado de la habitación
+          <select name="estado" [(ngModel)]="form.estado">
+            @for (e of estados; track e) {
+              <option [value]="e">{{ e }}</option>
+            }
+          </select>
+        </label>
+        <!-- Precio y capacidad lado a lado. min = valor mínimo permitido -->
+        <div class="dos-col">
+          <label>Precio por noche
+            <input type="number" name="precio" [(ngModel)]="form.precio" min="0" required />
+          </label>
+          <label>Capacidad
+            <input type="number" name="capacidad" [(ngModel)]="form.capacidad" min="1" required />
+          </label>
+        </div>
+
+        <label>Descripción
+          <input name="descripcion" [(ngModel)]="form.descripcion" />
+        </label>
+
+        <!-- Botones del formulario -->
+        <div class="botones">
+          <!-- type="button" = no envía el formulario, solo cierra -->
+          <button type="button" (click)="cerrar()">Cancelar</button>
+          <!-- Se desactiva si falta algún campo obligatorio;
+               el texto cambia según crees o edites -->
+          <button type="submit" [disabled]="f.invalid">
+            {{ editandoId() === null ? 'Crear' : 'Actualizar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

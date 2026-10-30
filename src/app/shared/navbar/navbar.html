@@ -1,0 +1,10 @@
+<header class="barra">
+  <h1>Sistema Gestion</h1>
+  <div class="usuario">
+    <div class="datos">
+      <strong>{{ autenticacion.usuarioActual()?.nombre }}</strong>
+      <small>{{ autenticacion.usuarioActual()?.rol }}</small>
+    </div>
+    <button (click)="salir()">salir</button>
+  </div>
+</header>
