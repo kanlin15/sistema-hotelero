@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 import { Autenticacion } from '../../services/autenticacion';
 
@@ -12,6 +12,7 @@ import { Autenticacion } from '../../services/autenticacion';
 export class Navbar {
   private router = inject(Router);
   autenticacion = inject(Autenticacion);
+  titulo = input<string>('Sistema Gestión');
 
   // Cierra la sesión activa y redirige al formulario de login.
   salir() {

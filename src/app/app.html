@@ -1,6 +1,6 @@
 <!-- El navbar se oculta en el login y en las pantallas que ya traen su propia barra -->
 @if (!esLogin && !tieneBarraPropia) {
-  <app-navbar />
+  <app-navbar [titulo]="tituloNavbar" />
 }
 
 <!-- Aquí se muestra la pantalla actual (login, panel, habitaciones...) -->

@@ -16,7 +16,7 @@ export class App {
 
   // Pantallas que ya traen su propia barra superior.
   // Cuando la URL coincide, el navbar global se oculta.
-  private rutasSinNavbar = ['/habitaciones', '/reservas', '/checkin'];
+  private rutasSinNavbar = ['/habitaciones', '/reservas', '/check'];
 
   // Devuelve true cuando la pantalla actual es el login.
   get esLogin() {
@@ -26,5 +26,18 @@ export class App {
   // Devuelve true si la vista actual ya tiene una barra propia.
   get tieneBarraPropia() {
     return this.rutasSinNavbar.some(r => this.router.url.startsWith(r));
+  }
+
+  // Título que se mostrará en la barra superior según la pantalla.
+  get tituloNavbar() {
+    const rutasTitulo: Record<string, string> = {
+      '/check': 'Gestión de Check-In',
+      '/habitaciones': 'Habitaciones',
+      '/reservas': 'Reservas',
+      '/panel': 'Panel'
+    };
+
+    const urlActual = this.router.url.split('?')[0];
+    return rutasTitulo[urlActual] ?? 'Sistema Gestión';
   }
 }

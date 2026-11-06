@@ -18,4 +18,13 @@ describe('Navbar', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should have a default title', () => {
+    expect(component.titulo()).toBe('Sistema Gestión');
+  });
+
+  it('should allow a custom title', () => {
+    component.titulo.set('Gestión de Check-In');
+    expect(component.titulo()).toBe('Gestión de Check-In');
+  });
 });

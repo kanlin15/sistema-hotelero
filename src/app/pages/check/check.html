@@ -1,0 +1,131 @@
+<!-- Barra superior de esquina a esquina -->
+<div class="top-action-bar">
+  <button class="btn-back" (click)="volver()">
+    ← Volver
+  </button>
+
+  <div class="brand-title">
+    <span class="brand-icon">✓</span>
+    <span>check-in/check-out</span>
+  </div>
+
+  <button class="btn-logout" (click)="cerrarSesion()">
+    Cerrar sesion
+  </button>
+</div>
+
+<!-- Contenedor del resto de la página -->
+<div class="checkin-container">
+
+  <!-- Barra de búsqueda -->
+  <div class="search-bar-container">
+    <input 
+      type="text" 
+      placeholder="Buscar por nombre, habitacion o documento"
+      [(ngModel)]="busqueda"
+      class="search-input"
+    />
+  </div>
+
+  <!-- Banner Central con Títulos -->
+  <div class="hero-banner">
+    <div class="hero-overlay">
+      <h2 class="section-title left-title">Reservas Pendientes de Check-in</h2>
+      <h1 class="main-title">CHECK-IN</h1>
+      <h2 class="section-title right-title">Huéspedes Activos</h2>
+    </div>
+  </div>
+
+  <!-- Contenedor en 2 columnas -->
+  <div class="cards-grid">
+    
+    <!-- Columna Izquierda: Reservas Pendientes -->
+    <div class="column">
+      <div class="card" *ngFor="let res of reservasPendientes">
+        <div class="card-header">
+          <div class="user-info">
+            <h3>{{ res.nombre }}</h3>
+            <p class="document">CC: {{ res.documento }}</p>
+            <p class="room">Habitación: {{ res.numeroHabitacion }}</p>
+          </div>
+          <div class="date-info">
+            <span class="label">Entrada</span>
+            <span class="value">{{ res.fechaEntrada }}</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="info-row">
+            <span class="field-label">Email:</span>
+            <span class="field-value">{{ res.email }}</span>
+          </div>
+          <div class="info-row">
+            <span class="field-label">Teléfono:</span>
+            <span class="field-value">{{ res.telefono }}</span>
+          </div>
+          <div class="info-row">
+            <span class="field-label">Salida:</span>
+            <span class="field-value">{{ res.fechaSalida }}</span>
+          </div>
+          <div class="info-row">
+            <span class="field-label">Total:</span>
+            <span class="field-value price">${{ res.total | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <button class="btn-action btn-checkin" (click)="realizarCheckIn(res)">
+          Realizar Check-In
+        </button>
+      </div>
+
+      <div class="no-data" *ngIf="reservasPendientes.length === 0">
+        <p>No hay reservas pendientes.</p>
+      </div>
+    </div>
+
+    <!-- Columna Derecha: Huéspedes Activos -->
+    <div class="column">
+      <div class="card" *ngFor="let res of huespedesActivos">
+        <div class="card-header">
+          <div class="user-info">
+            <h3>{{ res.nombre }}</h3>
+            <p class="document">CC: {{ res.documento }}</p>
+            <p class="room">Habitación: {{ res.numeroHabitacion }}</p>
+          </div>
+          <div class="date-info">
+            <span class="label">Entrada</span>
+            <span class="value">{{ res.fechaEntrada }}</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="info-row">
+            <span class="field-label">Email:</span>
+            <span class="field-value">{{ res.email }}</span>
+          </div>
+          <div class="info-row">
+            <span class="field-label">Teléfono:</span>
+            <span class="field-value">{{ res.telefono }}</span>
+          </div>
+          <div class="info-row">
+            <span class="field-label">Salida:</span>
+            <span class="field-value">{{ res.fechaSalida }}</span>
+          </div>
+          <div class="info-row">
+            <span class="field-label">Total:</span>
+            <span class="field-value price">${{ res.total | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <button class="btn-action btn-checkout" (click)="realizarCheckOut(res)">
+          Realizar Check-out
+        </button>
+      </div>
+
+      <div class="no-data" *ngIf="huespedesActivos.length === 0">
+        <p>No hay huéspedes activos.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
