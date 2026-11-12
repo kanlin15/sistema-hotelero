@@ -1,3 +1,4 @@
+
 // ============================================================
 // PANTALLA: GESTIÓN DE RESERVAS (lógica)
 // Este archivo es el "cerebro" de reservas.html: guarda los datos
@@ -39,41 +40,29 @@ const VACIA = {
   styleUrl: './reservas.css',         // archivo con los estilos
 })
 export class Reservas {
-
-  // ---------- SERVICIOS ----------
-  // Servicio de reservas (datos y cálculos)
   private servicio = inject(ReservasService);
-  // Servicio de habitaciones (para llenar el menú de habitaciones)
   private habitacionesServicio = inject(HabitacionesService);
-  // Router, para cambiar de pantalla
   private router = inject(Router);
 
-  // ---------- DATOS DE LA PANTALLA ----------
-  busqueda = signal('');                          // texto del buscador
-  modalNueva = signal(false);                     // true = se muestra "Nueva reserva"
-  reservaDetalle = signal<Reserva | null>(null);  // reserva abierta en "Detalles" (null = cerrado)
-  form = { ...VACIA };                            // datos del formulario (copia de VACIA)
-  errorFechas = signal('');                       // mensaje si las fechas no son válidas
+  busqueda = signal('');
+  modalNueva = signal(false);
+  reservaDetalle = signal<Reserva | null>(null);
 
-  // ---------- LISTAS CALCULADAS ----------
-  // Solo se pueden reservar habitaciones "Disponible".
-  // Se recalcula sola si una habitación cambia de estado.
+  form = { ...VACIA };
+  errorFechas = signal('');
+
   habitacionesLibres = computed(() =>
     this.habitacionesServicio.habitaciones().filter(h => h.estado === 'Disponible')
   );
 
-  // Lista de la tabla, filtrada por nombre, habitación o documento.
-  // Une esos tres datos en un solo texto y mira si contiene lo que escribiste.
-  // Si el buscador está vacío, includes('') es verdadero y se muestran todas.
   filtradas = computed(() => {
-    const q = this.busqueda().toLowerCase().trim();   // minúsculas y sin espacios sobrantes
+    const q = this.busqueda().toLowerCase().trim();
+
     return this.servicio.reservas().filter(r =>
       `${r.nombre} ${r.numeroHabitacion} ${r.documento}`.toLowerCase().includes(q)
     );
   });
 
-  // Total que se muestra en el formulario mientras eliges habitación y fechas.
-  // Number(...) convierte el valor del menú a número. Devuelve 0 si falta algún dato.
   totalEstimado() {
     return this.servicio.calcularTotal(
       Number(this.form.habitacionId),
@@ -82,60 +71,59 @@ export class Reservas {
     );
   }
 
-  // ---------- NAVEGACIÓN ----------
-  // Botón "Volver": regresa al panel
   volver() {
     this.router.navigate(['/panel']);
   }
 
-  // Botón "Cerrar sesión": por ahora lleva al login
   cerrarSesion() {
     this.router.navigate(['/login']);
   }
 
-  // ---------- FORMULARIO "NUEVA RESERVA" ----------
-  // Botón "+ Nueva Reserva": abre el formulario vacío
   nueva() {
-    this.form = { ...VACIA };        // formulario limpio
-    this.errorFechas.set('');        // borra errores anteriores
-    this.modalNueva.set(true);       // muestra la ventana
+    this.form = { ...VACIA };
+    this.errorFechas.set('');
+    this.modalNueva.set(true);
   }
 
-  // Botón "Crear Reserva"
-  guardar() {
-    // La salida debe ser posterior a la entrada.
-    // Las fechas AAAA-MM-DD se pueden comparar directamente como texto.
+  // Valida las fechas y guarda la reserva en Firebase.
+  async guardar() {
     if (this.form.fechaSalida <= this.form.fechaEntrada) {
       this.errorFechas.set('La fecha de salida debe ser posterior a la de entrada.');
-      return;                        // se detiene aquí y no guarda nada
+      return;
     }
-    // Crea la reserva (el servicio calcula el total y pone la habitación como "Reservada")
-    this.servicio.crear({ ...this.form, habitacionId: Number(this.form.habitacionId) });
-    this.cerrarNueva();
+
+    try {
+      await this.servicio.crear({
+        ...this.form,
+        habitacionId: Number(this.form.habitacionId)
+      });
+
+      this.cerrarNueva();
+    } catch (error) {
+      console.error('Error al guardar la reserva:', error);
+    }
   }
 
-  // Botón "Cancelar" o clic fuera del formulario
   cerrarNueva() {
     this.modalNueva.set(false);
   }
 
-  // ---------- VENTANA "DETALLES" ----------
-  // Botón "•••": abre el detalle de esa reserva
   verDetalle(r: Reserva) {
-    this.reservaDetalle.set(r);      // guardar la reserva hace que aparezca la ventana
+    this.reservaDetalle.set(r);
   }
 
-  // Cierra el modal de detalles
   cerrarDetalle() {
-    this.reservaDetalle.set(null);   // null = ventana cerrada
+    this.reservaDetalle.set(null);
   }
 
-  // ---------- ELIMINAR ----------
-  // Botón "✕": pregunta antes de eliminar.
-  // confirm() abre el cuadro "Aceptar / Cancelar" del navegador.
-  eliminar(r: Reserva) {
+  // Confirma la eliminación y espera a que Firebase la complete.
+  async eliminar(r: Reserva) {
     if (confirm(`¿Eliminar la reserva de ${r.nombre}?`)) {
-      this.servicio.eliminar(r.id);  // el servicio borra la reserva y libera la habitación
+      try {
+        await this.servicio.eliminar(r.id);
+      } catch (error) {
+        console.error('Error al eliminar la reserva:', error);
+      }
     }
   }
 }

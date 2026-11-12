@@ -1,3 +1,4 @@
+
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';             // necesario para [(ngModel)]
 import { CurrencyPipe } from '@angular/common';           // convierte 190000 en $190.000
@@ -84,7 +85,7 @@ export class Habitaciones {
   }
 
   // Botón "Crear" / "Guardar" del formulario
-  guardar() {
+  async guardar() {
     const id = this.editandoId();
     const numero = this.form.numero.trim();
 
@@ -106,17 +107,22 @@ export class Habitaciones {
 
     const datos = { ...this.form, numero, descripcion: this.form.descripcion.trim() };
 
-    if (id === null) {
-      this.servicio.crear(datos);
-    } else {
-      this.servicio.actualizar({ id, ...datos });
-    }
+    try {
+      if (id === null) {
+        await this.servicio.crear(datos);
+      } else {
+        await this.servicio.actualizar({ id, ...datos });
+      }
 
-    this.cerrar();
+      this.cerrar();
+    } catch (error) {
+      console.error('Error al guardar la habitación en Firebase:', error);
+      this.error.set('No se pudo guardar la habitación. Inténtalo nuevamente.');
+    }
   }
 
   // Botón "Eliminar": no deja borrar si hay reservas pendientes, confirmadas o activas
-  eliminar(h: Habitacion) {
+  async eliminar(h: Habitacion) {
     const tieneReservas = this.reservas
       .reservas()
       .some(
@@ -131,7 +137,12 @@ export class Habitaciones {
     }
 
     if (confirm(`¿Eliminar la habitación ${h.numero}?`)) {
-      this.servicio.eliminar(h.id);
+      try {
+        await this.servicio.eliminar(h.id);
+      } catch (error) {
+        console.error('Error al eliminar la habitación en Firebase:', error);
+        alert('No se pudo eliminar la habitación. Inténtalo nuevamente.');
+      }
     }
   }
 

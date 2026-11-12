@@ -1,8 +1,13 @@
+
 import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideClientHydration } from '@angular/platform-browser';
 import { registerLocaleData } from '@angular/common';
 import localeEsCO from '@angular/common/locales/es-CO';
+
+// Importa la inicialización de Firebase.
+import './firebase.init';
+
 import { routes } from './app.routes';
 
 // Registra el idioma español de Colombia (punto para miles: 190.000)

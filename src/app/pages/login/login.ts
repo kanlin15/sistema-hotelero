@@ -1,3 +1,4 @@
+
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -22,8 +23,13 @@ export class Login {
 
   // Intenta autenticar al usuario con lo que ingrese en el formulario.
   // Si es válido, entra al panel; si no, muestra mensaje de error.
-  ingresar() {
-    if (this.autenticacion.iniciarSesion(this.usuario, this.password)) {
+  async ingresar() {
+    const accesoCorrecto = await this.autenticacion.iniciarSesion(
+      this.usuario,
+      this.password,
+    );
+
+    if (accesoCorrecto) {
       this.error = false;
       this.router.navigate(['/panel']);
     } else {

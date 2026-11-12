@@ -1,3 +1,4 @@
+
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,45 +18,60 @@ export class CheckComponent {
   private reservasService = inject(ReservasService);
   private autenticacion = inject(Autenticacion);
   private router = inject(Router);
+
   busqueda: string = '';
   tituloVista: string = 'Gestión de Check-In';
 
-  // Obtenemos la señal de reservas del servicio
+  // Obtenemos la señal de reservas del servicio.
   reservas = this.reservasService.reservas;
 
+  // Mostramos las reservas pendientes que coinciden con la búsqueda.
   get reservasPendientes() {
-    return this.reservas().filter(r => 
+    return this.reservas().filter(r =>
       r.estado === 'Pendiente' && this.cumpleFiltro(r)
     );
   }
 
+  // Mostramos los huéspedes que ya realizaron el Check-In.
   get huespedesActivos() {
-    return this.reservas().filter(r => 
-      r.estado === 'Confirmada' && this.cumpleFiltro(r)
+    return this.reservas().filter(r =>
+      r.estado === 'Activa' && this.cumpleFiltro(r)
     );
   }
 
+  // Comprueba si una reserva coincide con el texto de búsqueda.
   cumpleFiltro(reserva: Reserva): boolean {
     if (!this.busqueda.trim()) return true;
+
     const term = this.busqueda.toLowerCase();
+
     return (
       reserva.nombre.toLowerCase().includes(term) ||
-      (reserva.numeroHabitacion && reserva.numeroHabitacion.toLowerCase().includes(term)) ||
+      (reserva.numeroHabitacion &&
+        reserva.numeroHabitacion.toLowerCase().includes(term)) ||
       reserva.documento.toLowerCase().includes(term)
     );
   }
 
-  realizarCheckIn(reserva: Reserva): void {
+  // Realiza el Check-In y cambia la habitación a Ocupada.
+  async realizarCheckIn(reserva: Reserva): Promise<void> {
     if (reserva.id) {
-      // Cambia el estado a Confirmada (lo que activa la habitación en el sistema)
-      this.reservasService.cambiarEstado(reserva.id, 'Confirmada');
+      try {
+        await this.reservasService.cambiarEstado(reserva.id, 'Activa');
+      } catch (error) {
+        console.error('Error al realizar el Check-In:', error);
+      }
     }
   }
 
-  realizarCheckOut(reserva: Reserva): void {
+  // Realiza el Check-Out y cambia la habitación a Limpieza.
+  async realizarCheckOut(reserva: Reserva): Promise<void> {
     if (reserva.id) {
-      // Cambia el estado a Cancelada o Finalizada para liberar la habitación
-      this.reservasService.cambiarEstado(reserva.id, 'Cancelada');
+      try {
+        await this.reservasService.cambiarEstado(reserva.id, 'Finalizada');
+      } catch (error) {
+        console.error('Error al realizar el Check-Out:', error);
+      }
     }
   }
 
