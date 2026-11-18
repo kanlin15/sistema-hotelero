@@ -1,4 +1,3 @@
-
 // ============================================================
 // PANTALLA: GESTIÓN DE RESERVAS (lógica)
 // Este archivo es el "cerebro" de reservas.html: guarda los datos
@@ -19,6 +18,7 @@ import { Router } from '@angular/router';                  // para navegar a otr
 import { ReservasService } from '../../services/reservas';          // guarda y calcula las reservas
 import { HabitacionesService } from '../../services/habitaciones';  // lista de habitaciones
 import { Reserva } from '../../models/reserva.model';               // "forma" de una reserva
+import { Autenticacion } from '../../services/autenticacion';
 
 // Valores iniciales del formulario cuando creas una reserva nueva.
 // Se copia con { ...VACIA } cada vez que se abre el formulario, para que quede limpio.
@@ -43,6 +43,7 @@ export class Reservas {
   private servicio = inject(ReservasService);
   private habitacionesServicio = inject(HabitacionesService);
   private router = inject(Router);
+  private autenticacion = inject(Autenticacion);
 
   busqueda = signal('');
   modalNueva = signal(false);
@@ -50,6 +51,7 @@ export class Reservas {
 
   form = { ...VACIA };
   errorFechas = signal('');
+  errorReserva = signal('');
 
   habitacionesLibres = computed(() =>
     this.habitacionesServicio.habitaciones().filter(h => h.estado === 'Disponible')
@@ -76,6 +78,7 @@ export class Reservas {
   }
 
   cerrarSesion() {
+    this.autenticacion.cerrarSesion();
     this.router.navigate(['/login']);
   }
 
@@ -92,6 +95,8 @@ export class Reservas {
       return;
     }
 
+    this.errorReserva.set(''); // Reinicia el error al intentar guardar una nueva reserva
+
     try {
       await this.servicio.crear({
         ...this.form,
@@ -100,6 +105,8 @@ export class Reservas {
 
       this.cerrarNueva();
     } catch (error) {
+      const mensaje = error instanceof Error ? error.message : 'Error al crear la reserva.';
+      this.errorReserva.set(mensaje);
       console.error('Error al guardar la reserva:', error);
     }
   }
@@ -125,5 +132,24 @@ export class Reservas {
         console.error('Error al eliminar la reserva:', error);
       }
     }
+  }
+
+  async confirmarPago(r: Reserva) {
+    const totalConfirmar = r.montoPagado ?? r.total;
+    if (!confirm(`¿Confirmar el pago de ${r.nombre} por ${this.currency(totalConfirmar)}?`)) return;
+
+    try {
+      await this.servicio.confirmarPago(r.id);
+      this.reservaDetalle.set(null);
+    } catch (error) {
+      console.error('Error al confirmar el pago:', error);
+      alert('No se pudo confirmar el pago. Inténtalo nuevamente.');
+    }
+  }
+
+  private currency(valor: number): string {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency', currency: 'COP', maximumFractionDigits: 0,
+    }).format(valor);
   }
 }

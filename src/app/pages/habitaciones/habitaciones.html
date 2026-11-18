@@ -128,10 +128,15 @@
           <button type="button" (click)="cerrar()">Cancelar</button>
           <!-- Se desactiva si falta algún campo obligatorio;
                el texto cambia según crees o edites -->
-          <button type="submit" [disabled]="f.invalid">
-            {{ editandoId() === null ? 'Crear' : 'Actualizar' }}
+          <button type="submit" [disabled]="f.invalid || guardando()">
+            {{ guardando() ? 'Guardando...' : (editandoId() === null ? 'Crear' : 'Actualizar') }}
           </button>
         </div>
+
+        <!-- Mensaje de error de Firebase o validación -->
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
       </form>
     </div>
   }

@@ -1,20 +1,90 @@
 <div class="login-page">
-  <h1>Sistema Gestion</h1>
+  <h1>Sistema Gestión</h1>
   <p class="subtitulo">Ingresa tus credenciales para continuar</p>
 
   <form class="card" (ngSubmit)="ingresar()">
-    <label for="usuario">Usuario</label>
-    <input id="usuario" name="usuario" type="text"
-           placeholder="Ingresa tu usuario" [(ngModel)]="usuario" />
+    <div class="selector-usuario" aria-label="Tipo de usuario">
+      <button type="button"
+              [class.activo]="tipoUsuario === 'personal'"
+              (click)="seleccionarTipo('personal')">
+        Personal
+      </button>
+      <button type="button"
+              [class.activo]="tipoUsuario === 'cliente'"
+              (click)="seleccionarTipo('cliente')">
+        Cliente
+      </button>
+      <button type="button"
+              [class.activo]="tipoUsuario === 'invitado'"
+              (click)="seleccionarTipo('invitado')">
+        Invitado
+      </button>
+    </div>
 
-    <label for="password">Contraseña</label>
-    <input id="password" name="password" type="password"
-           placeholder="********" [(ngModel)]="password" />
+    @if (tipoUsuario !== 'invitado') {
+      <label for="usuario">Nombre de usuario</label>
+      <input id="usuario" name="usuario" type="text"
+             placeholder="Ingresa tu usuario" [(ngModel)]="usuario" />
 
-    @if (error) {
-      <div class="error">Credenciales incorrectas</div>
+      <label for="password">Contraseña</label>
+      <input id="password" name="password" type="password"
+             placeholder="********" [(ngModel)]="password" />
     }
 
-    <button type="submit">Ingresar</button>
+    @if (tipoUsuario === 'cliente') {
+      <button type="button" class="recuperar" (click)="abrirRecuperacion('contrasena')">
+        ¿Olvidaste tu contraseña?
+      </button>
+      <button type="button" class="recuperar" (click)="abrirRecuperacion('usuario')">
+        ¿Olvidaste tu usuario?
+      </button>
+    }
+
+    @if (error) {
+      <div class="error">
+        {{ tipoUsuario === 'cliente' ? errorCliente : 'Credenciales incorrectas' }}
+      </div>
+    }
+
+    <button type="submit" class="ingresar">Ingresar</button>
+
+    @if (tipoUsuario === 'cliente') {
+      <p class="registro-texto">
+        ¿No tienes una cuenta?
+        <button type="button" class="registrar" (click)="irARegistro()">Regístrate</button>
+      </p>
+    }
   </form>
+
+  @if (modoRecuperacion) {
+    <div class="modal-recuperacion" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <button type="button" class="cerrar" (click)="cerrarRecuperacion()">×</button>
+
+        @if (modoRecuperacion === 'usuario') {
+          <h2>Recuperar usuario</h2>
+          <p>Ingresa el correo usado al registrarte.</p>
+          <label for="correoUsuario">Correo electrónico</label>
+          <input id="correoUsuario" name="correoUsuario" type="email"
+                 [(ngModel)]="correoRecuperacion"
+                 placeholder="correo@ejemplo.com" />
+        } @else {
+          <h2>Recuperar contraseña</h2>
+          <p>Te enviaremos un enlace para restablecerla.</p>
+          <label for="correoContrasena">Correo electrónico</label>
+          <input id="correoContrasena" name="correoContrasena" type="email"
+                 [(ngModel)]="correoRecuperacion"
+                 placeholder="correo@ejemplo.com" />
+        }
+
+        @if (mensajeRecuperacion) {
+          <div class="mensaje">{{ mensajeRecuperacion }}</div>
+        }
+
+        <button type="button" class="ingresar" (click)="recuperar()">
+          {{ modoRecuperacion === 'usuario' ? 'Buscar usuario' : 'Enviar enlace' }}
+        </button>
+      </div>
+    </div>
+  }
 </div>

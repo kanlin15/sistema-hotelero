@@ -1,4 +1,3 @@
-
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';             // necesario para [(ngModel)]
 import { CurrencyPipe } from '@angular/common';           // convierte 190000 en $190.000
@@ -37,6 +36,7 @@ export class Habitaciones {
   editandoId = signal<number | null>(null);     // null = creando; número = editando esa habitación
   error = signal('');                           // mensaje rojo del formulario
   form: Omit<Habitacion, 'id'> = { ...VACIA };  // datos que se están escribiendo
+  guardando = signal(false);
 
   // Opciones de los menús desplegables
   tipos = ['Individual', 'Familiar', 'Pareja', 'Suite'];
@@ -86,8 +86,15 @@ export class Habitaciones {
 
   // Botón "Crear" / "Guardar" del formulario
   async guardar() {
+    if (this.guardando()) return;
+
     const id = this.editandoId();
     const numero = this.form.numero.trim();
+
+    if (!numero) {
+      this.error.set('Ingresa el número de habitación.');
+      return;
+    }
 
     // No puede haber dos habitaciones con el mismo número
     // (se ignora la que se está editando)
@@ -106,6 +113,7 @@ export class Habitaciones {
     }
 
     const datos = { ...this.form, numero, descripcion: this.form.descripcion.trim() };
+    this.guardando.set(true);
 
     try {
       if (id === null) {
@@ -115,9 +123,22 @@ export class Habitaciones {
       }
 
       this.cerrar();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error al guardar la habitación en Firebase:', error);
-      this.error.set('No se pudo guardar la habitación. Inténtalo nuevamente.');
+
+      const codigo = typeof error === 'object' && error && 'code' in error
+        ? String(error.code)
+        : '';
+
+      if (codigo === 'permission-denied') {
+        this.error.set('No tienes permiso para guardar habitaciones. Inicia sesión como personal.');
+      } else if (codigo === 'unavailable') {
+        this.error.set('Firebase no está disponible. Verifica tu conexión e inténtalo nuevamente.');
+      } else {
+        this.error.set(error instanceof Error ? error.message : 'No se pudo guardar la habitación. Inténtalo nuevamente.');
+      }
+    } finally {
+      this.guardando.set(false);
     }
   }
 

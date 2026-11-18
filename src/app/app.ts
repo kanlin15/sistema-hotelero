@@ -16,7 +16,7 @@ export class App {
 
   // Pantallas que ya traen su propia barra superior.
   // Cuando la URL coincide, el navbar global se oculta.
-  private rutasSinNavbar = ['/habitaciones', '/reservas', '/check'];
+  private rutasSinNavbar = ['/habitaciones', '/reservas', '/check', '/catalogo', '/registro-usuario'];
 
   // Devuelve true cuando la pantalla actual es el login.
   get esLogin() {

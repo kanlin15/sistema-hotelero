@@ -1,4 +1,3 @@
-
 import { Injectable, computed, signal, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Habitacion } from '../models/habitacion.model';
@@ -17,12 +16,6 @@ import {
   deleteDoc,
   onSnapshot,
 } from 'firebase/firestore';
-
-// Funciones necesarias para comprobar la autenticación.
-import {
-  getAuth,
-  onAuthStateChanged,
-} from 'firebase/auth';
 
 // Aplicación Firebase inicializada en el proyecto.
 import { firebaseApp } from '../firebase.init';
@@ -55,58 +48,42 @@ export class HabitacionesService {
   constructor() {
     // Evita ejecutar Firebase durante el renderizado del servidor (SSR).
     if (isPlatformBrowser(this.plataforma)) {
-      const auth = getAuth(firebaseApp);
+      const db = getFirestore(firebaseApp);
 
-      // Espera a que Firebase confirme el estado de autenticación.
-      onAuthStateChanged(auth, (usuario) => {
+      // Escucha los cambios de la colección en tiempo real.
+      this.detenerEscucha = onSnapshot(
+        collection(db, 'habitaciones'),
+        (resultado) => {
+          const lista = resultado.docs
+            .map((documento) => documento.data() as Habitacion)
+            .sort((a, b) => a.id - b.id);
 
-        // Detiene una escucha anterior si existe.
-        this.detenerEscucha?.();
-        this.detenerEscucha = null;
-
-        // Si no hay usuario autenticado, no consulta Firestore.
-        if (!usuario) {
-          this._habitaciones.set([]);
-          return;
-        }
-
-        const db = getFirestore(firebaseApp);
-
-        // Escucha los cambios de la colección en tiempo real.
-        this.detenerEscucha = onSnapshot(
-          collection(db, 'habitaciones'),
-          (resultado) => {
-            const lista = resultado.docs
-              .map((documento) => documento.data() as Habitacion)
-              .sort((a, b) => a.id - b.id);
-
-            this._habitaciones.set(lista);
-            this.resolverCarga();
-          },
-          (error) => {
-            console.error('Error al consultar habitaciones en Firebase:', error);
-            this.resolverCarga();
-          },
-        );
-      });
+          this._habitaciones.set(lista);
+          this.resolverCarga();
+        },
+        (error) => {
+          console.error('Error al consultar habitaciones en Firebase:', error);
+          this.resolverCarga();
+        },
+      );
     }
   }
 
   // CREAR: agrega una habitación nueva en Firestore.
-  // CREAR: agrega una habitación nueva en Firestore.
-async crear(datos: Omit<Habitacion, 'id'>): Promise<void> {
-  await this.cargaInicial;
+  async crear(datos: Omit<Habitacion, 'id'>): Promise<void> {
+    await this.cargaInicial;
 
-  const id = Math.max(0, ...this._habitaciones().map((h) => h.id)) + 1;
+    const id = Math.max(0, ...this._habitaciones().map((h) => h.id)) + 1;
 
-  const db = getFirestore(firebaseApp);
+    const db = getFirestore(firebaseApp);
 
-  // Utiliza el número consecutivo como identificador del documento.
-  await setDoc(doc(db, 'habitaciones', String(id)), {
-    ...datos,
-    id,
-  });
-}
+    // Utiliza el número consecutivo como identificador del documento.
+    await setDoc(doc(db, 'habitaciones', String(id)), {
+      ...datos,
+      id,
+    });
+  }
+
   // ACTUALIZAR: reemplaza los datos de una habitación existente.
   // También la usa ReservasService para cambiar el estado (Reservada, Ocupada, etc.)
   async actualizar(habitacion: Habitacion): Promise<void> {

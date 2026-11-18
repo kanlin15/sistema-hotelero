@@ -1,22 +1,22 @@
-
 import { Injectable, signal, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-
-// Importaciones necesarias para Firebase Authentication.
 import {
   getAuth,
   signInWithEmailAndPassword,
   signOut,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
-
-// Importaciones necesarias para consultar Firestore.
 import {
   getFirestore,
   doc,
   getDoc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
 } from 'firebase/firestore';
-
-// Importa la aplicación Firebase que inicializamos anteriormente.
 import { firebaseApp } from '../firebase.init';
 
 // Define la información mínima que se guarda de una sesión activa.
@@ -24,20 +24,17 @@ export interface DatosSesion {
   usuario: string;
   nombre: string;
   rol: string;
-}
-
-// Representa cada usuario registrado del sistema.
-interface UsuarioRegistrado extends DatosSesion {
-  password: string;
+  uid?: string;
+  puntos?: number;
+  nivel?: string;
+  bienvenidaUsada?: boolean;
 }
 
 // Servicio de autenticación.
 // Guarda usuarios, valida credenciales y mantiene la sesión actual del usuario.
 @Injectable({ providedIn: 'root' })
 export class Autenticacion {
-  private usuarios: UsuarioRegistrado[] = this.leerUsuarios();
   usuarioActual = signal<DatosSesion | null>(this.leerSesion());
-
   // Identifica si el código se está ejecutando en el navegador.
   // Esto evita inicializar las funciones de autenticación durante SSR.
   private plataforma = inject(PLATFORM_ID);
@@ -65,8 +62,7 @@ export class Autenticacion {
 
       // Consulta el documento del usuario en Firestore.
       const db = getFirestore(firebaseApp);
-      const referencia = doc(db, 'usuarios', usuarioNormalizado);
-      const resultado = await getDoc(referencia);
+      const resultado = await getDoc(doc(db, 'usuarios', usuarioNormalizado));
 
       if (!resultado.exists()) {
         await signOut(auth);
@@ -80,6 +76,9 @@ export class Autenticacion {
         usuario: String(datos['usuario'] ?? usuarioNormalizado),
         nombre: String(datos['nombre'] ?? ''),
         rol: String(datos['rol'] ?? '').trim(),
+        uid: String(datos['uid'] ?? '').trim(),
+        puntos: Number(datos['puntos'] ?? 0),
+        nivel: String(datos['nivel'] ?? '').trim(),
       };
 
       this.usuarioActual.set(sesion);
@@ -87,7 +86,7 @@ export class Autenticacion {
 
       return true;
     } catch (error) {
-      console.error('Error al iniciar sesión con Firebase:', error);
+      console.error('Error al iniciar sesión del personal:', error);
 
       // Si ocurre un error, no dejamos una sesión incompleta.
       await signOut(auth).catch(() => {});
@@ -95,20 +94,157 @@ export class Autenticacion {
     }
   }
 
-  // Registra un nuevo usuario en el sistema.
-  // Se conserva el método original mientras no conectemos un formulario
-  // de registro con Firebase.
-  registrar(nombre: string, usuario: string, password: string, rol: string): string | null {
-    if (this.usuarios.some((u) => u.usuario === usuario)) {
-      return 'Ese usuario ya existe';
-    }
+  async iniciarSesionCliente(usuario: string, password: string): Promise<boolean> {
+    if (!isPlatformBrowser(this.plataforma)) return false;
 
-    this.usuarios.push({ nombre, usuario, password, rol });
-    this.guardar('usuarios', this.usuarios);
-    return null;
+    const usuarioNormalizado = usuario.trim().toLowerCase();
+
+    try {
+      let datos: Record<string, unknown> | null = null;
+
+      try {
+        const db = getFirestore(firebaseApp);
+        const resultado = await getDoc(doc(db, 'usuarios', usuarioNormalizado));
+        if (resultado.exists()) datos = resultado.data();
+      } catch (error) {
+        console.warn('No se pudo consultar el usuario en Firestore; se usa el registro local:', error);
+      }
+
+      if (!datos) {
+        const clientes = JSON.parse(localStorage.getItem('clientes') ?? '[]') as Array<Record<string, unknown>>;
+        datos = clientes.find((cliente) => cliente['usuario'] === usuarioNormalizado) ?? null;
+      }
+
+      if (!datos) return false;
+
+      const correo = String(datos['correo'] ?? '').trim();
+
+      if (!correo || String(datos['rol'] ?? '').toLowerCase() !== 'cliente') {
+        return false;
+      }
+
+      await signInWithEmailAndPassword(getAuth(firebaseApp), correo, password);
+
+      const sesion: DatosSesion = {
+        usuario: usuarioNormalizado,
+        nombre: String(datos['nombre'] ?? ''),
+        rol: 'cliente',
+        uid: String(datos['uid'] ?? '').trim(),
+        puntos: Number(datos['puntos'] ?? 0),
+        nivel: String(datos['nivel'] ?? '').trim(),
+        bienvenidaUsada: datos['bienvenidaUsada'] === true,
+      };
+
+      this.usuarioActual.set(sesion);
+      this.guardar('sesion', sesion);
+      return true;
+    } catch (error) {
+      console.error('Error al iniciar sesión del cliente:', error);
+      await signOut(getAuth(firebaseApp)).catch(() => {});
+      return false;
+    }
   }
 
-  // Cierra la sesión actual y elimina la información guardada en el navegador.
+  async registrarCliente(nombre: string, usuario: string, correo: string, celular: string, password: string): Promise<string | null> {
+    if (!isPlatformBrowser(this.plataforma)) return 'El registro solo está disponible en el navegador';
+
+    const usuarioNormalizado = usuario.trim().toLowerCase();
+    const correoNormalizado = correo.trim().toLowerCase();
+    const celularNormalizado = celular.trim();
+
+    if (!nombre.trim() || !usuarioNormalizado || !correoNormalizado || !celularNormalizado || password.length < 6) {
+      return 'Completa todos los datos. La contraseña debe tener al menos 6 caracteres';
+    }
+
+    try {
+      const db = getFirestore(firebaseApp);
+
+      const clientesLocales = JSON.parse(localStorage.getItem('clientes') ?? '[]') as Array<Record<string, unknown>>;
+      if (clientesLocales.some((cliente) => cliente['usuario'] === usuarioNormalizado)) {
+        return 'Ese nombre de usuario ya está registrado';
+      }
+
+      const credencial = await createUserWithEmailAndPassword(
+        getAuth(firebaseApp),
+        correoNormalizado,
+        password,
+      );
+
+      const datosCliente = {
+        uid: credencial.user.uid,
+        usuario: usuarioNormalizado,
+        nombre: nombre.trim(),
+        correo: correoNormalizado,
+        celular: celularNormalizado,
+        rol: 'cliente',
+        fechaRegistro: new Date().toISOString(),
+        puntos: 500,
+        nivel: 'bronze',
+        bienvenidaUsada: false,
+      };
+
+      try {
+        await setDoc(doc(db, 'usuarios', usuarioNormalizado), datosCliente);
+      } catch (error) {
+        console.warn('Firestore rechazó el documento; se guarda el cliente localmente:', error);
+      }
+
+      if (isPlatformBrowser(this.plataforma)) {
+        const guardados = JSON.parse(localStorage.getItem('clientes') ?? '[]') as Array<Record<string, unknown>>;
+        const actualizados = guardados.filter((cliente) => cliente['usuario'] !== usuarioNormalizado);
+        actualizados.push(datosCliente);
+        localStorage.setItem('clientes', JSON.stringify(actualizados));
+      }
+
+      return null;
+    } catch (error: unknown) {
+      const codigo = typeof error === 'object' && error && 'code' in error
+        ? String(error.code)
+        : '';
+
+      if (codigo === 'auth/email-already-in-use') return 'Ese correo ya tiene una cuenta registrada';
+      if (codigo === 'auth/invalid-email') return 'Ingresa un correo electrónico válido';
+      if (codigo === 'auth/weak-password') return 'La contraseña debe tener al menos 6 caracteres';
+
+      console.error('Error al registrar cliente:', error);
+      return 'No se pudo completar el registro';
+    }
+  }
+
+  async recuperarUsuario(correo: string): Promise<string | null> {
+    if (!isPlatformBrowser(this.plataforma)) return null;
+
+    try {
+      const db = getFirestore(firebaseApp);
+      const consulta = query(
+        collection(db, 'usuarios'),
+        where('correo', '==', correo.trim().toLowerCase()),
+      );
+      const resultados = await getDocs(consulta);
+
+      if (resultados.empty) return null;
+
+      const datos = resultados.docs[0].data();
+      return String(datos['usuario'] ?? '').trim() || null;
+    } catch (error) {
+      console.error('Error al recuperar usuario:', error);
+      return null;
+    }
+  }
+
+  async recuperarContrasena(correo: string): Promise<boolean> {
+    if (!isPlatformBrowser(this.plataforma) || !correo.trim()) return false;
+
+    try {
+      await sendPasswordResetEmail(getAuth(firebaseApp), correo.trim().toLowerCase());
+      return true;
+    } catch (error) {
+      console.error('Error al enviar recuperación de contraseña:', error);
+      return false;
+    }
+  }
+
+  // Cierra la sesión current y elimina la información guardada en el navegador.
   cerrarSesion() {
     this.usuarioActual.set(null);
 
@@ -127,18 +263,6 @@ export class Autenticacion {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(clave, JSON.stringify(valor));
     }
-  }
-
-  // Carga los usuarios iniciales que existen en el sistema.
-  private leerUsuarios(): UsuarioRegistrado[] {
-    const base: UsuarioRegistrado[] = [
-      { usuario: 'katalina', password: '1234', nombre: 'katalina vidal', rol: 'administrador' },
-    ];
-
-    if (typeof localStorage === 'undefined') return base;
-
-    const guardados = localStorage.getItem('usuarios');
-    return guardados ? JSON.parse(guardados) : base;
   }
 
   // Recupera la sesión activa guardada en el navegador, si existe.

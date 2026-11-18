@@ -207,7 +207,16 @@
           Total: <strong>{{ r.total | currency:'COP':'symbol-narrow':'1.0-0' }}</strong>
         </p>
 
+        @if (r.pagoEstado !== 'Pagado') {
+          <p class="total-vivo">
+            Pago: <strong>{{ r.metodoPago || 'Pendiente' }}</strong>
+          </p>
+        }
+
         <div class="botones">
+          @if (r.pagoEstado !== 'Pagado') {
+            <button type="button" (click)="confirmarPago(r)">Confirmar pago</button>
+          }
           <button type="button" (click)="cerrarDetalle()">Cerrar</button>
         </div>
       </div>

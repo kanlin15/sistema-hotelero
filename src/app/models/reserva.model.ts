@@ -19,4 +19,12 @@ export interface Reserva {
   fechaSalida: string;
   total: number;             // noches × precio por noche
   estado: EstadoReserva;
+  usuarioUid?: string;
+  pagoEstado?: 'Pendiente' | 'Pagado' | 'Reembolsado';
+  metodoPago?: 'Tarjeta' | 'Transferencia' | 'Efectivo';
+  montoPagado?: number;
+  descuentoBienvenida?: number;
+  descuentoPuntos?: number;
+  puntosUsados?: number;
+  puntosOtorgados?: number;
 }

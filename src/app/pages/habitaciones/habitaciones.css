@@ -242,3 +242,14 @@
   cursor: pointer;
   font-weight: 600;
 }
+
+/* ---------- MENSAJE DE ERROR ---------- */
+.error {
+  margin: 8px 0;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: #ffe3e3;
+  color: #c92a2a;
+  font-size: 0.85rem;
+  text-align: center;
+}

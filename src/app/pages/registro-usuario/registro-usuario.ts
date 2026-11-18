@@ -1,71 +1,78 @@
-import { Injectable, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { Autenticacion } from '../../services/autenticacion';
 
-export interface Sesion {
-  usuario: string;
-  nombre: string;
-  rol: string;
-}
+@Component({
+  selector: 'app-registro-usuario',
+  standalone: true,
+  imports: [FormsModule],
+  templateUrl: './registro-usuario.html',
+  styleUrl: './registro-usuario.css',
+})
+export class RegistroUsuario {
+  private router = inject(Router);
+  private autenticacion = inject(Autenticacion);
 
-interface UsuarioRegistrado extends Sesion {
-  password: string;
-}
+  nombre = '';
+  usuario = '';
+  correo = '';
+  celular = '';
+  password = '';
+  confirmarPassword = '';
+  error = '';
+  mensaje = '';
+  registrando = false;
 
-@Injectable({ providedIn: 'root' })
-export class Auth {
-  private usuarios: UsuarioRegistrado[] = this.leerUsuarios();
-  usuarioActual = signal<Sesion | null>(this.leerSesion());
+  async registrar() {
+    if (this.registrando) return;
 
-  login(usuario: string, password: string): boolean {
-    const encontrado = this.usuarios.find(
-      (u) => u.usuario === usuario && u.password === password,
-    );
-    if (!encontrado) return false;
+    this.error = '';
+    this.mensaje = '';
 
-    const sesion: Sesion = {
-      usuario: encontrado.usuario,
-      nombre: encontrado.nombre,
-      rol: encontrado.rol,
-    };
-    this.usuarioActual.set(sesion);
-    this.guardar('sesion', sesion);
-    return true;
-  }
-
-  // Devuelve un mensaje de error, o null si todo salió bien
-  registrar(nombre: string, usuario: string, password: string, rol: string): string | null {
-    if (this.usuarios.some((u) => u.usuario === usuario)) {
-      return 'Ese usuario ya existe';
+    if (!this.nombre.trim() || !this.usuario.trim() || !this.correo.trim() || !this.celular.trim()) {
+      this.error = 'Completa todos los datos';
+      return;
     }
-    this.usuarios.push({ nombre, usuario, password, rol });
-    this.guardar('usuarios', this.usuarios);
-    return null;
-  }
 
-  logout() {
-    this.usuarioActual.set(null);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('sesion');
+    if (this.password.length < 6) {
+      this.error = 'La contraseña debe tener al menos 6 caracteres';
+      return;
+    }
+
+    if (this.password !== this.confirmarPassword) {
+      this.error = 'Las contraseñas no coinciden';
+      return;
+    }
+
+    this.registrando = true;
+
+    try {
+      const resultado = await this.autenticacion.registrarCliente(
+        this.nombre,
+        this.usuario,
+        this.correo,
+        this.celular,
+        this.password,
+      );
+
+      if (resultado) {
+        this.error = resultado;
+        return;
+      }
+
+      this.mensaje = 'Cuenta creada y registrada correctamente';
+      this.password = '';
+      this.confirmarPassword = '';
+    } catch (error) {
+      console.error('Error al crear la cuenta:', error);
+      this.error = 'No se pudo guardar la cuenta. Inténtalo nuevamente.';
+    } finally {
+      this.registrando = false;
     }
   }
 
-  private guardar(clave: string, valor: unknown) {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(clave, JSON.stringify(valor));
-    }
-  }
-
-  private leerUsuarios(): UsuarioRegistrado[] {
-    const base: UsuarioRegistrado[] = [
-      { usuario: 'admin', password: '1234', nombre: 'Carlos Andres Hernandez', rol: 'administrador' },
-    ];
-    if (typeof localStorage === 'undefined') return base;
-    const guardados = localStorage.getItem('usuarios');
-    return guardados ? JSON.parse(guardados) : base;
-  }
-
-  private leerSesion(): Sesion | null {
-    if (typeof localStorage === 'undefined') return null;
-    const guardada = localStorage.getItem('sesion');
-    return guardada ? JSON.parse(guardada) : null;
+  volverAlLogin() {
+    this.router.navigate(['/login']);
   }
 }

@@ -1,0 +1,145 @@
+<div class="catalogo">
+  <header class="encabezado">
+    <button type="button" class="marca" (click)="irAIngreso()">NOMBRE DEL HOTEL</button>
+    <nav>
+      @if (sesion()) {
+        <span class="saludo">Hola, {{ sesion()?.nombre }}</span>
+      } @else {
+        <button type="button" (click)="irAIngreso()">Iniciar sesión</button>
+        <button type="button" class="registro" (click)="irARegistro()">Registrarse</button>
+      }
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div>
+      <span class="etiqueta">Bienvenido</span>
+      <h1>Encuentra tu próxima estancia</h1>
+      <p>Consulta habitaciones, cotiza tu viaje y obtén beneficios con cada reserva registrada.</p>
+    </div>
+  </section>
+
+  <main>
+    <div class="beneficios">
+      <article><strong>Reserva más rápido</strong><span>Los datos quedan guardados en tu perfil.</span></article>
+      <article><strong>Acumula puntos</strong><span>Los pagos confirmados generan recompensas.</span></article>
+      <article><strong>Obtén descuentos</strong><span>Tu fidelidad mejora el beneficio disponible.</span></article>
+    </div>
+
+    <section class="titulo-seccion">
+      <div>
+        <span>ALOJAMIENTO</span>
+        <h2>Habitaciones disponibles</h2>
+      </div>
+      @if (sesion()) {
+        <div class="nivel"><small>Programa de beneficios</small><strong>{{ puntosDisponibles() }} puntos</strong></div>
+      }
+    </section>
+
+    <section class="grid">
+      @for (habitacion of habitacionesDisponibles(); track habitacion.id) {
+        <article class="tarjeta-habitacion">
+          <div class="imagen-habitacion">
+            <span>{{ habitacion.tipo }}</span>
+          </div>
+          <div class="contenido-habitacion">
+            <h3>Habitación {{ habitacion.numero }}</h3>
+            <p>{{ habitacion.descripcion || 'Alojamiento cómodo y equipado.' }}</p>
+            <div class="detalles">
+              <span>Hasta {{ habitacion.capacidad }} huéspedes</span>
+              <strong>{{ habitacion.precio | currency:'COP':'symbol-narrow':'1.0-0' }} <small>/ noche</small></strong>
+            </div>
+            <button type="button" (click)="abrirCotizacion(habitacion)">
+              Consultar disponibilidad
+            </button>
+          </div>
+        </article>
+      }
+
+      @if (habitacionesDisponibles().length === 0) {
+        <p class="sin-habitaciones">Por ahora no hay habitaciones disponibles para cotizar.</p>
+      }
+    </section>
+  </main>
+
+  @if (habitacionSeleccionada(); as habitacion) {
+    <div class="overlay" (click)="cerrarCotizacion()">
+      <form class="modal" (click)="$event.stopPropagation()" (ngSubmit)="reservar()">
+        <button type="button" class="cerrar" (click)="cerrarCotizacion()">×</button>
+        <span class="modal-etiqueta">COTIZACIÓN</span>
+        <h2>Habitación {{ habitacion.numero }}</h2>
+        <p>{{ habitacion.tipo }} · Capacidad: {{ habitacion.capacidad }} personas</p>
+
+        <div class="dos-col">
+          <label>Entrada
+            <input type="date" name="fechaEntrada" [(ngModel)]="fechaEntrada"
+                   [min]="fechaHoy" />
+          </label>
+          <label>Salida
+            <input type="date" name="fechaSalida" [(ngModel)]="fechaSalida"
+                   [min]="fechaEntrada || fechaHoy" />
+          </label>
+        </div>
+
+        @if (sesion()) {
+          <div class="dos-col">
+            <label>Nombre
+              <input name="nombre" [(ngModel)]="nombre" />
+            </label>
+            <label>Documento
+              <input name="documento" [(ngModel)]="documento" />
+            </label>
+          </div>
+          <div class="dos-col">
+            <label>Correo
+              <input type="email" name="email" [(ngModel)]="email" />
+            </label>
+            <label>Teléfono
+              <input name="telefono" [(ngModel)]="telefono" />
+            </label>
+          </div>
+
+          <div class="beneficio-pago">
+            <p><span>Beneficio de bienvenida</span><strong>-{{ descuentoBienvenida() | currency:'COP':'symbol-narrow':'1.0-0' }}</strong></p>
+            @if (puntosDisponibles() > 0) {
+              <label class="usar-puntos">
+                <input type="checkbox" name="usarPuntos" [(ngModel)]="usarPuntos" />
+                Usar {{ puntosDisponibles() }} puntos
+              </label>
+              @if (usarPuntos) {
+                <p><span>Descuento por puntos</span><strong>-{{ descuentoPuntos() | currency:'COP':'symbol-narrow':'1.0-0' }}</strong></p>
+              }
+            }
+          </div>
+
+          <label>Método de pago
+            <select name="metodoPago" [(ngModel)]="metodoPago">
+              <option value="Tarjeta">Tarjeta</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Efectivo">Efectivo al llegar</option>
+            </select>
+          </label>
+        }
+
+        <div class="total">
+          <span>Total a pagar</span>
+          <strong>{{ sesion() ? (totalFinal() | currency:'COP':'symbol-narrow':'1.0-0') : (total() | currency:'COP':'symbol-narrow':'1.0-0') }}</strong>
+        </div>
+
+        @if (error) { <p class="error">{{ error }}</p> }
+        @if (mensaje) { <p class="mensaje">{{ mensaje }}</p> }
+
+        @if (!sesion()) {
+          <button type="submit" class="accion">Cotizar como invitado</button>
+          <p class="cuenta">¿Quieres guardar la reserva y ganar puntos?
+            <button type="button" (click)="irARegistro()">Crear cuenta</button>
+          </p>
+        } @else {
+          <button type="submit" class="accion" [disabled]="guardando">
+            {{ guardando ? 'Guardando...' : 'Solicitar reserva' }}
+          </button>
+        }
+      </form>
+    </div>
+  }
+</div>
